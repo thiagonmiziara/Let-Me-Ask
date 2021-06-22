@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import {BrowserRouter,Route} from "react-router-dom"
 
 import {auth,database,firebase} from "./services/firebase"
@@ -14,7 +14,7 @@ type User = {
 
 type AuthContextType ={
   user: User | undefined;
-  signInWithGoogle: ()=> void;
+  signInWithGoogle: ()=> Promise<void>;
 }
 
 export const AuthContext = createContext({}as AuthContextType);
@@ -22,10 +22,30 @@ export const AuthContext = createContext({}as AuthContextType);
 export function App() {
   const [user,setUser] = useState<User>();
 
-  function signInWithGoogle(){
+  //verificando se já existe um usuário logado.
+  useEffect(()=>{
+    auth.onAuthStateChanged(user =>{
+      if(user){
+        const {displayName,photoURL,uid} = user
+
+        if(!displayName || !photoURL){
+          throw new Error('Missing information from Google Account.');
+        }
+
+        setUser({
+          id: uid,
+          name: displayName,
+          avatar: photoURL
+        })
+      }
+    })
+  },[]);
+
+  async function signInWithGoogle(){
     const provider = new firebase.auth.GoogleAuthProvider();
 
-    auth.signInWithPopup(provider).then(result =>{
+    const result = await  auth.signInWithPopup(provider);
+
       if(result.user){
         const {displayName,photoURL,uid} = result.user
 
@@ -39,9 +59,7 @@ export function App() {
           avatar: photoURL
         })
       }
-      
-    })
-  }
+   }
 
   return (
     <BrowserRouter>
