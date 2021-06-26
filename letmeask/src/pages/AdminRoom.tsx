@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 
 import logoImg from "../assets/images/logo.svg";
 import deleteImg from "../assets/images/delete.svg";
@@ -8,7 +8,7 @@ import { RoomCode } from "../components/RoomCode";
 import { Question } from "../components/Question";
 
 import { useRoom } from "../hooks/useRoom";
-import { database } from '../services/firebase';
+import { database } from "../services/firebase";
 
 import "../styles/room.scss";
 
@@ -18,17 +18,25 @@ type RoomParams = {
 
 export function AdminRoom() {
   // const { user } = useAuth();
+  const history = useHistory();
   const params = useParams<RoomParams>();
+
   const roomId = params.id;
   const { questions, title } = useRoom(roomId);
 
+  async function handleEndRoom() {
+    await database.ref(`rooms/${roomId}`).update({
+      endedAt: new Date(),
+    });
 
-  async function handleDeleteQuestion(questionId: string){
-   if(window.confirm('Tem certeza que você deseja remover essa pergunta?')){
-     await database.ref(`rooms/${roomId}/questions/${questionId}`).remove();
-   }
+    history.push("/");
   }
 
+  async function handleDeleteQuestion(questionId: string) {
+    if (window.confirm("Tem certeza que você deseja remover essa pergunta?")) {
+      await database.ref(`rooms/${roomId}/questions/${questionId}`).remove();
+    }
+  }
 
   return (
     <div id='page-room'>
@@ -37,7 +45,9 @@ export function AdminRoom() {
           <img src={logoImg} alt='Letmeask' />
           <div>
             <RoomCode code={roomId} />
-            <Button isOutlined>Encerrar sala</Button>
+            <Button isOutlined onClick={handleEndRoom}>
+              Encerrar sala
+            </Button>
           </div>
         </div>
       </header>
@@ -58,9 +68,9 @@ export function AdminRoom() {
               >
                 <button
                   type='button'
-                  onClick={()=> handleDeleteQuestion(question.id)}
+                  onClick={() => handleDeleteQuestion(question.id)}
                 >
-                  <img src={deleteImg} alt="Remover pergunta" />
+                  <img src={deleteImg} alt='Remover pergunta' />
                 </button>
               </Question>
             );
